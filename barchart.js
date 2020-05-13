@@ -1,38 +1,35 @@
 function drawChart(data) {
     const margin = { top: 40, right: 50, bottom: 60, left: 50 };
-    const w = 800;
-    const h = 400;
+    const w = 1000;
+    const h = 500;
 
     const chartWidth = w - margin.left - margin.right;
     const chartHeight = h - margin.top - margin.bottom;
 
-    const rectWidth = w / data.length;
-
-    let domainY = d3.extent(data.map(d => d[1]));
+    const rectWidth = chartWidth / data.length;
 
     let dates = [];
     for (let obj of data) {
         dates.push(parseTime(obj[0]));
     }
-    var domainX = d3.extent(dates);
 
     const yScale = d3.scaleLinear()
-        .domain(domainY)
+        .domain([0, d3.max(data.map(d => d[1]))])
         .range([chartHeight, 0]);
 
     const xScale = d3.scaleTime()
-        .domain(domainX)
+        .domain(d3.extent(dates))
         .range([0, chartWidth]);
 
     const yAxis = d3.axisLeft(yScale)
-        .ticks(10);
 
-    const xAxis = d3.axisBottom(xScale);
+    const xAxis = d3.axisBottom(xScale)
 
     let tooltip = d3.select(".chart")
         .append("div")
         .attr("class", "tooltip")
-        .style("opacity", 0);
+        .style("opacity", 0)
+        .attr("id", "tooltip");
 
     const svg = d3.select('.chart')
         .append('svg')
@@ -42,21 +39,13 @@ function drawChart(data) {
         .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
 
     svg.append('g')
-        .attr('transform', `translate(0, 4)`)
         .call(yAxis)
-        .attr("id", "x-axis");
-
-    svg.append('text')
-        .attr('transform', 'rotate(-90)')
-        .attr('x', -250)
-        .attr('y', 20)
-        .attr("class", "label")
-        .text('Gross Domestic Product');
+        .attr("id", "y-axis");
 
     svg.append('g')
-        .attr('transform', `translate(0, ${chartHeight + 4})`)
+        .attr('transform', 'translate(0,' + chartHeight + ')')
         .call(xAxis)
-        .attr("id", "y-axis");
+        .attr("id", "x-axis");
 
     svg.selectAll("rect")
         .data(data)
@@ -68,15 +57,15 @@ function drawChart(data) {
         .attr("class", "bar")
         .attr("data-date", d => d[0])
         .attr("data-gdp", d => d[1])
-        // yScale(0) > yScale(100) as Yaxis was inverted, height should be inverted by 'yScale(0)-'
-        .attr('height', d => yScale(0) - yScale(d[1]))
+        .attr('height', d => chartHeight - yScale(d[1]))
         .on("mouseover", function (d) {
             tooltip.transition()
                 .duration(200)
                 .style("opacity", 0.9);
             tooltip.html(dateTooltip(d[0]) + "<br/>" + gdpTooltip(d[1]))
                 .style("left", (d3.event.pageX + 10) + "px")
-                .style("top", (d3.event.pageY - 28) + "px");
+                .style("top", (d3.event.pageY - 28) + "px")
+                .attr("data-date", d[0]);
         })
         .on("mouseout", function (d) {
             tooltip.transition()
@@ -84,7 +73,12 @@ function drawChart(data) {
                 .style("opacity", 0);
         });
 
-    console.log(parseTime(data[0][0]).getFullYear());
+    svg.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -250)
+        .attr('y', 20)
+        .attr("class", "label")
+        .text('Gross Domestic Product');
 
 }
 
